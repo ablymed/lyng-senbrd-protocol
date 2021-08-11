@@ -1,0 +1,14 @@
+# local environment
+.envrc
+.venv
+.vscode
+.west
+
+# build system output
+/build*
+
+# generated files
+checkpatch.txt
+compliance.xml
+Gitlint.txt
+Identity.txt
