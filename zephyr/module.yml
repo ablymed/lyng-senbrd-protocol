@@ -1,0 +1,4 @@
+name: lyng-senbrd-protocol
+build:
+  cmake: .
+  kconfig: Kconfig
