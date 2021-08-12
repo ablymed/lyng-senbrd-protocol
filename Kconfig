@@ -1,0 +1,42 @@
+#
+# Copyright (c) 2021 Ablymed
+#
+
+module = SENBRD_PROTOCOL
+module-str = SENBRD_PROTOCOL
+source "subsys/logging/Kconfig.template.log_config"
+
+config SENBRD_PROTOCOL
+	bool "Sensor board protocol"
+	help
+	  Enable the sensor board protocol module
+
+if SENBRD_PROTOCOL
+
+config PROTOCOL_MAX_PIEZO_CHANNELS
+	int "Maximum number of active piezo channels"
+	default 4
+	range 1 4
+	help
+	  Maximum number of active piezo channels in the message structure.
+	  The actual number of active piezo channels is configurable at runtime.
+
+config PROTOCOL_MAX_PIEZO_SAMPLE_SETS_PER_MSG
+	int "Maximum number of piezo sample sets per message"
+	default 10
+	range 1 255
+	help
+	  Maximum number of piezo sample sets per messages.
+	  Increasing this value increases the message payload size by approximately
+
+	    MAX_PIEZO_CHANNELS * MAX_PIEZO_SAMPLE_SETS_PER_MSG + 4
+
+	  bytes, so beware of memory consumption vs network performance.
+	  The actual number of samples per sets is configurable at runtime.
+
+config PROTOCOL_ENABLE_CHECKSUM
+	bool "Enable checksum calculation"
+	help
+	  Enables the optional CRC16 checksum field calculation and check.
+
+endif # SENBRD_PROTOCOL
