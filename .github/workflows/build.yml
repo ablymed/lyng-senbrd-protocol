@@ -1,0 +1,23 @@
+name: Build
+
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install --no-install-recommends --yes \
+          cmake \
+          gcc
+
+    - name: Build library
+      run: |
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make
