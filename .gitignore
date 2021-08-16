@@ -12,3 +12,8 @@ checkpatch.txt
 compliance.xml
 Gitlint.txt
 Identity.txt
+CMakeFiles
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+*.a
