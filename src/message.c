@@ -143,7 +143,7 @@ static uint32_t decode_next32(const uint8_t *const buf, int buflen, int *size, u
 	return ntohl(portable);
 }
 
-static void decode_piezo_sample_set(struct piezo_sample_set_t *const data, uint8_t *const buf,
+static void decode_piezo_sample_set(struct piezo_sample_set_t *const data, const uint8_t *const buf,
 				    int buflen, int *size, uint8_t *OK)
 {
 	data->status = decode_next16(buf, buflen, size, OK);
@@ -154,7 +154,7 @@ static void decode_piezo_sample_set(struct piezo_sample_set_t *const data, uint8
 	}
 }
 
-static void decode_piezo_data(struct piezo_data_t *const data, uint8_t *const buf, int buflen,
+static void decode_piezo_data(struct piezo_data_t *const data, const uint8_t *const buf, int buflen,
 			      int *size, uint8_t *OK)
 {
 	data->sequence_number = decode_next8(buf, buflen, size, OK);
@@ -166,7 +166,7 @@ static void decode_piezo_data(struct piezo_data_t *const data, uint8_t *const bu
 	}
 }
 
-int decode(struct message_t *const msg, uint8_t *const buf, int buflen)
+int decode(struct message_t *const msg, const uint8_t *const buf, int buflen)
 {
 	uint8_t OK = 1;
 	int size = 0;
