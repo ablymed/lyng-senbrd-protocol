@@ -14,16 +14,22 @@ if (NOT CONFIG_SENBRD_PROTOCOL)
   set(CMAKE_C_STANDARD_REQUIRED true)
   set(CMAKE_CXX_STANDARD 11)
   set(CMAKE_CXX_STANDARD_REQUIRED true)
-  add_compile_options(-Wall -Wextra -Werror)
 
-  # set kconfig variables, can be overriden on commandline
-  add_compile_definitions(CONFIG_BIG_ENDIAN=y)
-  add_compile_definitions(CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS=4)
-  add_compile_definitions(CONFIG_PROTOCOL_MAX_PIEZO_SAMPLE_SETS_PER_MSG=10)
+  # set compile options only if building as standalone library
+  if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    add_compile_options(-Wall -Wextra "$<$<CONFIG:RELEASE>:-Werror>")
+  endif()
 
   # create actual library
   add_library(SenbrdProtocol src/message.c)
   target_include_directories(SenbrdProtocol PUBLIC include/)
+
+  # set kconfig variables, can be overriden on commandline
+  target_compile_definitions(SenbrdProtocol PUBLIC
+    CONFIG_BIG_ENDIAN=y
+    CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS=4
+    CONFIG_PROTOCOL_MAX_PIEZO_SAMPLE_SETS_PER_MSG=10
+  )
 
 else()
 
