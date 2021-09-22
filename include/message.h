@@ -83,7 +83,7 @@ int encode(const struct message_t *const message, uint8_t *buf, int buflen);
  * @param buflen number of bytes in the buffer
  * @return int number of decoded bytes on success, 0 on error
  */
-int decode(struct message_t *const message, uint8_t *const buf, int buflen);
+int decode(struct message_t *const message, const uint8_t *const buf, int buflen);
 
 #ifdef __cplusplus
 }
