@@ -4,7 +4,9 @@
 
 #include <message.h>
 #include "portable.h"
-#include "crc.h"
+
+#define PIEZO_DATA_HEADER_SIZE 3
+#define PIEZO_SAMPLE_SET_HEADER_SIZE 4
 
 static void encode_next8(uint8_t byte, uint8_t *const buf, int buflen, int *size, uint8_t *OK)
 {
@@ -53,10 +55,17 @@ static void encode_piezo_sample_set(const struct piezo_sample_set_t *const sampl
 	}
 }
 
+static inline int calc_piezo_data_size(const struct piezo_data_t *const data)
+{
+	return PIEZO_DATA_HEADER_SIZE +
+	       (data->sets_per_message *
+		(PIEZO_SAMPLE_SET_HEADER_SIZE + (CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS * 2)));
+}
+
 static void encode_piezo_data(const struct piezo_data_t *const data, uint8_t *const buf, int buflen,
 			      int *size, uint8_t *OK)
 {
-	if (buflen < (data->sets_per_message * CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS * 2) + 3) {
+	if (buflen < calc_piezo_data_size(data)) {
 		*OK = 0;
 	} else {
 		encode_next8(data->sequence_number, buf, buflen, size, OK);
@@ -75,26 +84,30 @@ int encode(const struct message_t *const msg, uint8_t *buf, int buflen)
 	int size = 0;
 
 	memset(buf, 0, buflen);
-	encode_next32(msg->code, buf, buflen, &size, &OK);
-	encode_next32(msg->sequence_number, buf, buflen, &size, &OK);
-	encode_next32(msg->timestamp, buf, buflen, &size, &OK);
+	encode_next32(msg->header.code, buf, buflen, &size, &OK);
+	encode_next32(msg->header.sequence_number, buf, buflen, &size, &OK);
+	encode_next32(msg->header.timestamp, buf, buflen, &size, &OK);
 
-	switch (msg->code) {
+	switch (msg->header.code) {
 	case START_SAMPLING_REQUEST:
-	case START_SAMPLING_RESPONSE:
+		encode_next32(4, buf, buflen, &size, &OK);
 		encode_next32(msg->start_sampling.timestamp, buf, buflen, &size, &OK);
 		break;
 
 	case STOP_SAMPLING_REQUEST:
 	case STOP_SAMPLING_RESPONSE:
+	case START_SAMPLING_RESPONSE:
+	case PIEZO_CONFIG_RESPONSE:
+		encode_next32(0, buf, buflen, &size, &OK);
 		break;
 
 	case PIEZO_DATA:
+		encode_next32(calc_piezo_data_size(&(msg->piezo_data)), buf, buflen, &size, &OK);
 		encode_piezo_data(&(msg->piezo_data), buf, buflen, &size, &OK);
 		break;
 
 	case PIEZO_CONFIG_REQUEST:
-	case PIEZO_CONFIG_RESPONSE:
+		encode_next32(2, buf, buflen, &size, &OK);
 		encode_next8(msg->piezo_config.sets_per_message, buf, buflen, &size, &OK);
 		encode_next8(msg->piezo_config.samplerate_limiter, buf, buflen, &size, &OK);
 		break;
@@ -105,8 +118,6 @@ int encode(const struct message_t *const msg, uint8_t *buf, int buflen)
 		OK = 0;
 		break;
 	}
-
-	encode_next16(calculate_crc16(buf, size), buf, buflen, &size, &OK);
 
 	return OK ? size : 0;
 }
@@ -169,18 +180,20 @@ static void decode_piezo_data(struct piezo_data_t *const data, const uint8_t *co
 int decode(struct message_t *const msg, const uint8_t *const buf, int buflen)
 {
 	uint8_t OK = 1;
-	int size = 0;
 
-	msg->code = decode_next32(buf, buflen, &size, &OK);
-	msg->sequence_number = decode_next32(buf, buflen, &size, &OK);
-	msg->timestamp = decode_next32(buf, buflen, &size, &OK);
+	int size = decode_header(&msg->header, buf, buflen);
 
-	switch (msg->code) {
+	if (size == 0) {
+		return 0;
+	}
+
+	switch (msg->header.code) {
 	case START_SAMPLING_REQUEST:
-	case START_SAMPLING_RESPONSE:
 		msg->start_sampling.timestamp = decode_next32(buf, buflen, &size, &OK);
 		break;
 
+	case PIEZO_CONFIG_RESPONSE:
+	case START_SAMPLING_RESPONSE:
 	case STOP_SAMPLING_REQUEST:
 	case STOP_SAMPLING_RESPONSE:
 		break;
@@ -190,7 +203,6 @@ int decode(struct message_t *const msg, const uint8_t *const buf, int buflen)
 		break;
 
 	case PIEZO_CONFIG_REQUEST:
-	case PIEZO_CONFIG_RESPONSE:
 		msg->piezo_config.sets_per_message = decode_next8(buf, buflen, &size, &OK);
 		msg->piezo_config.samplerate_limiter = decode_next8(buf, buflen, &size, &OK);
 		break;
@@ -202,12 +214,18 @@ int decode(struct message_t *const msg, const uint8_t *const buf, int buflen)
 		break;
 	}
 
-	uint16_t calc_crc = calculate_crc16(buf, size);
-	uint16_t recv_crc = decode_next16(buf, buflen, &size, &OK);
+	return OK ? size : 0;
+}
 
-	if (calc_crc != recv_crc) {
-		OK = 0;
-	}
+int decode_header(struct message_header_t *const header, const uint8_t *const buf, int buflen)
+{
+	uint8_t OK = 1;
+	int size = 0;
+
+	header->code = decode_next32(buf, buflen, &size, &OK);
+	header->sequence_number = decode_next32(buf, buflen, &size, &OK);
+	header->timestamp = decode_next32(buf, buflen, &size, &OK);
+	header->payload_length = decode_next32(buf, buflen, &size, &OK);
 
 	return OK ? size : 0;
 }

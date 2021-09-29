@@ -34,9 +34,4 @@ config PROTOCOL_MAX_PIEZO_SAMPLE_SETS_PER_MSG
 	  bytes, so beware of memory consumption vs network performance.
 	  The actual number of samples per sets is configurable at runtime.
 
-config PROTOCOL_ENABLE_CHECKSUM
-	bool "Enable checksum calculation"
-	help
-	  Enables the optional CRC16 checksum field calculation and check.
-
 endif # SENBRD_PROTOCOL

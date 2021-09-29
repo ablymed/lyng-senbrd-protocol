@@ -13,6 +13,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#define MESSAGE_HEADER_LENGTH 16
+
 enum message_type_t {
 	INVALID,
 
@@ -51,18 +53,21 @@ struct piezo_config_t {
 	uint8_t samplerate_limiter;
 };
 
-struct message_t {
+struct message_header_t {
 	enum message_type_t code;
 	uint32_t sequence_number;
 	uint32_t timestamp;
+	uint32_t payload_length;
+};
+
+struct message_t {
+	struct message_header_t header;
 
 	union {
 		struct start_sampling_data_t start_sampling;
 		struct piezo_data_t piezo_data;
 		struct piezo_config_t piezo_config;
 	};
-
-	uint32_t checksum;
 };
 
 /**
@@ -84,6 +89,16 @@ int encode(const struct message_t *const message, uint8_t *buf, int buflen);
  * @return int number of decoded bytes on success, 0 on error
  */
 int decode(struct message_t *const message, const uint8_t *const buf, int buflen);
+
+/**
+ * @brief decode a byte buffer into a message header object
+ *
+ * @param header pointer to a message header object that will hold the decoded data
+ * @param buf byte buffer containing the encoded header
+ * @param buflen number of bytes in the buffer
+ * @return int number of decoded bytes on success, 0 on error
+ */
+int decode_header(struct message_header_t *const header, const uint8_t *const buf, int buflen);
 
 #ifdef __cplusplus
 }
