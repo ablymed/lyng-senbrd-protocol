@@ -6,6 +6,7 @@
 #include "portable.h"
 
 #define PIEZO_DATA_HEADER_SIZE 3
+#define ACCEL_SAMPLE_SET_SIZE 12 /* 3 * sizeof(uint32_t) */
 #define PIEZO_SAMPLE_SET_HEADER_SIZE 4
 
 static void encode_next8(uint8_t byte, uint8_t *const buf, int buflen, int *size, uint8_t *OK)
@@ -44,9 +45,19 @@ static void encode_next32(uint32_t in, uint8_t *const buf, int buflen, int *size
 	encode_next8(tmp.s[3], buf, buflen, size, OK);
 }
 
+static void encode_accel_data(const struct piezo_sample_set_t *const sample, uint8_t *const buf, int buflen,
+			      int *size, uint8_t *OK)
+{
+	/* We dont check buffer length as the check is done in calling function */
+	for(int i = 0; i < ACCEL_CHANNELS; i++) {
+		encode_next32(sample->accelerometer_data[i], buf, buflen, size, OK);
+	}
+}
+
 static void encode_piezo_sample_set(const struct piezo_sample_set_t *const sample,
 				    uint8_t *const buf, int buflen, int *size, uint8_t *OK)
 {
+	encode_accel_data(sample, buf, buflen, size, OK);
 	encode_next16(sample->status, buf, buflen, size, OK);
 	encode_next16(sample->sequence_number, buf, buflen, size, OK);
 
@@ -55,17 +66,20 @@ static void encode_piezo_sample_set(const struct piezo_sample_set_t *const sampl
 	}
 }
 
-static inline int calc_piezo_data_size(const struct piezo_data_t *const data)
+static inline int calc_sample_data_size(const struct piezo_data_t *const data)
 {
 	return PIEZO_DATA_HEADER_SIZE +
+	       (data->sets_per_message * 
+	       ACCEL_SAMPLE_SET_SIZE) + 
 	       (data->sets_per_message *
 		(PIEZO_SAMPLE_SET_HEADER_SIZE + (CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS * 2)));
 }
 
+
 static void encode_piezo_data(const struct piezo_data_t *const data, uint8_t *const buf, int buflen,
 			      int *size, uint8_t *OK)
 {
-	if (buflen < calc_piezo_data_size(data)) {
+	if (buflen < calc_sample_data_size(data)) {
 		*OK = 0;
 	} else {
 		encode_next8(data->sequence_number, buf, buflen, size, OK);
@@ -102,7 +116,7 @@ int encode(const struct message_t *const msg, uint8_t *buf, int buflen)
 		break;
 
 	case PIEZO_DATA:
-		encode_next32(calc_piezo_data_size(&(msg->piezo_data)), buf, buflen, &size, &OK);
+		encode_next32(calc_sample_data_size(&(msg->piezo_data)), buf, buflen, &size, &OK);
 		encode_piezo_data(&(msg->piezo_data), buf, buflen, &size, &OK);
 		break;
 
@@ -154,9 +168,17 @@ static uint32_t decode_next32(const uint8_t *const buf, int buflen, int *size, u
 	return ntohl(portable);
 }
 
+static void decode_accel_data(struct piezo_sample_set_t *const data, const uint8_t *const buf, int buflen,
+			      int *size, uint8_t *OK) {
+	for(int i = 0; i < ACCEL_CHANNELS; i++) {
+		data->accelerometer_data[i] = decode_next32(buf, buflen, size, OK);
+	}
+}
+
 static void decode_piezo_sample_set(struct piezo_sample_set_t *const data, const uint8_t *const buf,
 				    int buflen, int *size, uint8_t *OK)
 {
+	decode_accel_data(data, buf, buflen, size, OK);
 	data->status = decode_next16(buf, buflen, size, OK);
 	data->sequence_number = decode_next16(buf, buflen, size, OK);
 
@@ -164,6 +186,8 @@ static void decode_piezo_sample_set(struct piezo_sample_set_t *const data, const
 		data->samples[i] = decode_next16(buf, buflen, size, OK);
 	}
 }
+
+
 
 static void decode_piezo_data(struct piezo_data_t *const data, const uint8_t *const buf, int buflen,
 			      int *size, uint8_t *OK)

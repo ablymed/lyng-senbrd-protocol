@@ -14,6 +14,7 @@ extern "C" {
 #include <stdbool.h>
 
 #define MESSAGE_HEADER_LENGTH 16
+#define ACCEL_CHANNELS 3 /* XYZ */
 
 enum message_type_t {
 	INVALID,
@@ -36,6 +37,7 @@ struct start_sampling_data_t {
 };
 
 struct piezo_sample_set_t {
+	uint32_t accelerometer_data[ACCEL_CHANNELS];
 	uint16_t status;
 	uint16_t sequence_number;
 	int16_t samples[CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS];
