@@ -45,11 +45,11 @@ static void encode_next32(uint32_t in, uint8_t *const buf, int buflen, int *size
 	encode_next8(tmp.s[3], buf, buflen, size, OK);
 }
 
-static void encode_accel_data(const struct piezo_sample_set_t *const sample, uint8_t *const buf, int buflen,
-			      int *size, uint8_t *OK)
+static void encode_accel_data(const struct piezo_sample_set_t *const sample, uint8_t *const buf,
+			      int buflen, int *size, uint8_t *OK)
 {
 	/* We dont check buffer length as the check is done in calling function */
-	for(int i = 0; i < ACCEL_CHANNELS; i++) {
+	for (int i = 0; i < ACCEL_CHANNELS; i++) {
 		encode_next32(sample->accelerometer_data[i], buf, buflen, size, OK);
 	}
 }
@@ -68,13 +68,10 @@ static void encode_piezo_sample_set(const struct piezo_sample_set_t *const sampl
 
 static inline int calc_sample_data_size(const struct piezo_data_t *const data)
 {
-	return PIEZO_DATA_HEADER_SIZE +
-	       (data->sets_per_message * 
-	       ACCEL_SAMPLE_SET_SIZE) + 
+	return PIEZO_DATA_HEADER_SIZE + (data->sets_per_message * ACCEL_SAMPLE_SET_SIZE) +
 	       (data->sets_per_message *
 		(PIEZO_SAMPLE_SET_HEADER_SIZE + (CONFIG_PROTOCOL_MAX_PIEZO_CHANNELS * 2)));
 }
-
 
 static void encode_piezo_data(const struct piezo_data_t *const data, uint8_t *const buf, int buflen,
 			      int *size, uint8_t *OK)
@@ -168,9 +165,10 @@ static uint32_t decode_next32(const uint8_t *const buf, int buflen, int *size, u
 	return ntohl(portable);
 }
 
-static void decode_accel_data(struct piezo_sample_set_t *const data, const uint8_t *const buf, int buflen,
-			      int *size, uint8_t *OK) {
-	for(int i = 0; i < ACCEL_CHANNELS; i++) {
+static void decode_accel_data(struct piezo_sample_set_t *const data, const uint8_t *const buf,
+			      int buflen, int *size, uint8_t *OK)
+{
+	for (int i = 0; i < ACCEL_CHANNELS; i++) {
 		data->accelerometer_data[i] = decode_next32(buf, buflen, size, OK);
 	}
 }
@@ -186,8 +184,6 @@ static void decode_piezo_sample_set(struct piezo_sample_set_t *const data, const
 		data->samples[i] = decode_next16(buf, buflen, size, OK);
 	}
 }
-
-
 
 static void decode_piezo_data(struct piezo_data_t *const data, const uint8_t *const buf, int buflen,
 			      int *size, uint8_t *OK)
