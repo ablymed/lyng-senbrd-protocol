@@ -11,7 +11,7 @@ extern "C" {
 
 #if CONFIG_SENBRD_PROTOCOL
 
-#include <sys/byteorder.h>
+#include <zephyr/sys/byteorder.h>
 
 #define ntohs(x) sys_be16_to_cpu(x)
 #define ntohl(x) sys_be32_to_cpu(x)
